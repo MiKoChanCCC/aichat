@@ -24,9 +24,6 @@ const RootLayout = () => {
             <span>Lama AI</span>
           </Link>
           <div className="user">
-            <SignedOut>
-              <SignInButton />
-            </SignedOut>
             <SignedIn>
               <UserButton />
             </SignedIn>

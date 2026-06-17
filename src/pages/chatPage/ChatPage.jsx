@@ -1,4 +1,4 @@
-import "./chaPage.css";
+import "./chatPage.css";
 
 const ChaPage = () => {
   return <div className="chaPage">ChaPage</div>;

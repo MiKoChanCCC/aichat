@@ -6,10 +6,8 @@ const HomePage = () => {
     <div className="homePage">
       <div className="left">
         <h1>Lama AI</h1>
-        <h2>qwertyuiopasdfghjkl</h2>
-        <h3>
-          qwertyuiopasdfghjklzxcvbnmqwe,qwertyuiopasdfghjklzxcvbnm,rtyuiopasdfghjklzxcvbnm
-        </h3>
+        <h2>大幅提升您的工作效率和创造力</h2>
+        <h3>嘿，合作伙伴！今天的首要任务是什么？</h3>
         <Link to="/dashboard" className="link">
           Dashboard
         </Link>

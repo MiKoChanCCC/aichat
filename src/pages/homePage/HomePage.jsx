@@ -41,31 +41,32 @@ const HomePage = () => {
                 "Human1:We produce food for Mice",
                 1000,
                 () => {
-                  setTypeStatus("human1");
+                  setTypeStatus("bot");
                 },
 
                 "bot:We produce food for Hamsters",
                 1000,
                 () => {
-                  setTypeStatus("bot");
+                  setTypeStatus("human2");
                 },
 
                 "Human2:We produce food for Guinea Pigs",
                 1000,
                 () => {
-                  setTypeStatus("human2");
+                  setTypeStatus("bot");
                 },
 
                 "bot:We produce food for Chinchillas",
                 1000,
                 () => {
-                  setTypeStatus("bot");
+                  setTypeStatus("human1");
                 },
               ]}
               wrapper="span"
               speed={40}
               cursor={true}
               repeat={Infinity}
+              omitDeletionAnimation={true}
             />
           </div>
         </div>

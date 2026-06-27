@@ -71,6 +71,13 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+      <footer>
+        <img src="/logo.png" alt="" />
+        <div className="Links">
+          <Link to="">Terms of Service</Link>
+          <Link to="">Privacy Policy</Link>
+        </div>
+      </footer>
     </div>
   );
 };

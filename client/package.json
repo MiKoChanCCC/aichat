@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.8",
-    "@google/genai": "^2.10.0",
     "@imagekit/react": "^5.0.2",
     "imagekitio-react": "^4.2.0",
     "react": "19.0.0-rc-8b08e99e-20240713",

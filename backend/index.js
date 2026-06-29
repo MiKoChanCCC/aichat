@@ -1,7 +1,7 @@
 import express from "express";
 import ImageKit from "imagekit";
 import cors from "cors";
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -26,18 +26,22 @@ app.get("/api/upload", (req, res) => {
   res.send(result);
 });
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL,
+});
 
+// openAI SDK
 app.post("/api/chat", async (req, res) => {
   try {
-    const { prompt } = req.body;
-    const interaction = await ai.interactions.create({
-      model: "gemini-3.5-flash",
-      input: prompt,
+    const { messages } = req.body;
+    const completion = await client.chat.completions.create({
+      model: "deepseek-v4-flash-260425",
+      messages,
     });
-    res.json({ text: interaction.output_text });
+    res.json({ answer: completion.choices[0].message.content });
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("OpenAI API error:", error);
     res.status(500).json({ error: error.message });
   }
 });

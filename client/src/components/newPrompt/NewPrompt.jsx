@@ -4,19 +4,19 @@ import Upload from "../upload/Upload";
 import { useState } from "react";
 import { IKImage } from "imagekitio-react";
 import completionsFetch from "../../lib/openai";
+import Markdown from "react-markdown";
 
 const NewPrompt = () => {
   // 提示词
   const [prompt, setPrompt] = useState("");
-
   // AI回答
   const [answer, setAnswer] = useState("");
-
   // 上传图片
   const [img, setImg] = useState({
     isLoading: false,
     error: "",
     dbData: {},
+    aiData: "",
   });
 
   // openAI SDK的messages
@@ -30,14 +30,15 @@ const NewPrompt = () => {
   const endRef = useRef(null);
 
   useEffect(() => {
-    endRef.current.scrollIntoView();
-  }, []);
+    endRef.current.scrollIntoView({ behavior: "smooth" });
+  }, [prompt, answer, img.dbData]);
 
-  // 使用openai.js
+  // 使用openai.js（流式打字机效果）
   const add = async (messages) => {
-    const ans = await completionsFetch(messages);
-    setAnswer(ans);
-    console.log("ans:", ans);
+    setAnswer("");
+    await completionsFetch(messages, (chunk) => {
+      setAnswer(chunk);
+    });
   };
 
   // 提交表单回调
@@ -47,10 +48,35 @@ const NewPrompt = () => {
     const text = e.target.text.value;
     if (!text) return;
 
-    const newMessages = [...messages, { role: "user", content: text }];
+    let newMessages = [];
+    if (!img.aiData) {
+      newMessages = [...messages, { role: "user", content: text }];
+    } else {
+      newMessages = [
+        ...messages,
+        {
+          role: "user",
+          content: [
+            { type: "text", text: text },
+            {
+              type: "image_url",
+              image_url: {
+                url: img.aiData,
+              },
+            },
+          ],
+        },
+      ];
+    }
     add(newMessages);
     setPrompt(text);
     setMessages(newMessages);
+    setImg({
+      isLoading: false,
+      error: "",
+      dbData: {},
+      aiData: {},
+    });
   };
 
   return (
@@ -67,14 +93,23 @@ const NewPrompt = () => {
         />
       )}
       {prompt && <div className="user message">{prompt}</div>}
-      {answer && <div className="message">{answer}</div>}
+      {answer && (
+        <div className="message">
+          <Markdown>{answer}</Markdown>
+        </div>
+      )}
       {/* 底部div，用于页面自动跳转到底部 */}
       <div className="endChat" ref={endRef}></div>
       {/* prompt表单区 */}
       <form className="newForm" onSubmit={handleSubmit}>
         <Upload setImg={setImg} />
         <input id="file" type="file" multiple={false} hidden />
-        <input type="text" name="text" placeholder="给 LAMA AI 发送消息" />
+        <input
+          type="text"
+          name="text"
+          placeholder="给 LAMA AI 发送消息"
+          autoComplete="off"
+        />
         <button>
           <img src="/arrow.png" alt="" />
         </button>

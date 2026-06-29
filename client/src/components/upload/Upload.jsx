@@ -33,7 +33,7 @@ const Upload = ({ setImg }) => {
   const onSuccess = (res) => {
     console.log("Success", res);
     setImg((pre) => {
-      return { ...pre, isLoading: false, dbData: res };
+      return { ...pre, isLoading: false, dbData: res, aiData: res.url };
     });
   };
 
@@ -44,10 +44,13 @@ const Upload = ({ setImg }) => {
 
   // 图片开始上传回调
   const onUploadStart = (evt) => {
-    console.log("Start", evt);
     setImg((pre) => {
-      return { ...pre, isLoading: true };
+      return {
+        ...pre,
+        isLoading: true,
+      };
     });
+    console.log("Start", evt);
   };
 
   const ikUploadRef = useRef();

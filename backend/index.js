@@ -3,6 +3,9 @@ import ImageKit from "imagekit";
 import cors from "cors";
 import OpenAI from "openai";
 import mongoose from "mongoose";
+import UserChats from "./models/userChats.js";
+import Chat from "./models/chat.js";
+import { ClerkExpressRequireAuth } from "@clerk/clerk-sdk-node";
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -10,6 +13,7 @@ const app = express();
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
+    credentials: true,
   }),
 );
 
@@ -29,11 +33,6 @@ const imagekit = new ImageKit({
   urlEndpoint: process.env.IMAGE_KIT_ENDPOINT,
   publicKey: process.env.IMAGE_KIT_PUBLIC_KEY,
   privateKey: process.env.IMAGE_KIT_PRIVATE_KEY,
-});
-
-app.get("/api/upload", (req, res) => {
-  const result = imagekit.getAuthenticationParameters();
-  res.send(result);
 });
 
 const client = new OpenAI({
@@ -84,6 +83,110 @@ app.post("/api/chat", async (req, res) => {
     console.error("OpenAI API error:", error);
     res.status(500).json({ error: error.message });
   }
+});
+
+app.get("/api/upload", (req, res) => {
+  const result = imagekit.getAuthenticationParameters();
+  res.send(result);
+});
+
+app.post("/api/chats", ClerkExpressRequireAuth(), async (req, res) => {
+  const userId = req.auth.userId;
+  const { text } = req.body;
+  let title = "";
+  if (text.length > 15) {
+    title = text.slice(0, 15) + "...";
+  } else {
+    title = text;
+  }
+
+  try {
+    // 创建一个新的chat
+    const newChat = new Chat({
+      userId: userId,
+      history: [
+        {
+          role: "user",
+          parts: [{ text }],
+        },
+      ],
+    });
+    const savedChat = await newChat.save();
+
+    // 检查该聊天id是否存在
+    const userChats = await UserChats.find({ userId: userId });
+    // 如果不存在，则创建一个新的userChats,并将该聊天信息添加到userChats数组中
+    if (!userChats.length) {
+      const newUserChats = new UserChats({
+        userId: userId,
+        chats: [
+          {
+            _id: savedChat._id,
+            title: title,
+          },
+        ],
+      });
+
+      await newUserChats.save();
+    } else {
+      // 如果存在，则将聊天信息推到userChats数组中
+      await UserChats.updateOne(
+        { userId: userId },
+        {
+          $push: {
+            chats: {
+              $each: [
+                {
+                  _id: savedChat._id,
+                  title: title,
+                },
+              ],
+              $position: 0,
+            },
+          },
+        },
+      );
+    }
+
+    res.status(201).send(newChat._id);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("创建chat发生错误");
+  }
+});
+
+app.get("/api/userchats", ClerkExpressRequireAuth(), async (req, res) => {
+  const userId = req.auth.userId;
+
+  try {
+    const userChats = await UserChats.find({ userId: userId });
+
+    if (userChats.length === 0) {
+      return res.status(200).send([]);
+    }
+    res.status(200).send(userChats[0].chats);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("获取userChats失败");
+  }
+});
+
+app.get("/api/chats/:id", ClerkExpressRequireAuth(), async (req, res) => {
+  const userId = req.auth.userId;
+
+  try {
+    const chat = await Chat.findOne({ _id: req.params.id, userId: userId });
+
+    res.status(200).send(chat);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("获取chat失败");
+  }
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(401).send("Unauthenticated!");
 });
 
 app.listen(port, () => {

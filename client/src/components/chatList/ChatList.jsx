@@ -1,7 +1,24 @@
 import { Link } from "react-router-dom";
 import "./chatList.css";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-react";
 
 const ChatList = () => {
+  const { getToken } = useAuth();
+
+  const { isPending, error, data } = useQuery({
+    queryKey: ["repoData"],
+    queryFn: async () => {
+      const token = await getToken();
+      return fetch(`${import.meta.env.VITE_API_URL}/api/userchats`, {
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }).then((res) => res.json());
+    },
+  });
+
   return (
     <div className="chatList">
       <span className="title">DASHBOARD</span>
@@ -11,18 +28,17 @@ const ChatList = () => {
       <hr />
       <span className="title">React Chat</span>
       <div className="links">
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
-        <Link to="">我的聊天标题</Link>
+        {isPending
+          ? "Loading"
+          : error
+            ? "出现错误"
+            : data?.map((chat) => {
+                return (
+                  <Link to={`/chats/${chat._id}`} key={chat._id}>
+                    {chat.title}
+                  </Link>
+                );
+              })}
       </div>
       <hr />
       <div className="upgrade">

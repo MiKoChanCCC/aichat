@@ -21,10 +21,10 @@ const NewPrompt = () => {
 
   // openAI SDK的messages
   const [messages, setMessages] = useState([
-    {
-      role: "system",
-      content: "你是一个有用的AI聊天助手",
-    },
+    // {
+    //   role: "system",
+    //   content: "你是一个有用的AI聊天助手",
+    // },
   ]);
 
   const endRef = useRef(null);
@@ -34,11 +34,12 @@ const NewPrompt = () => {
   }, [prompt, answer, img.dbData]);
 
   // 使用openai.js（流式打字机效果）
-  const add = async (messages) => {
+  const add = async (newMessages) => {
     setAnswer("");
-    await completionsFetch(messages, (chunk) => {
+    const fullAnswer = await completionsFetch(newMessages, (chunk) => {
       setAnswer(chunk);
     });
+    setMessages([...newMessages, { role: "assistant", content: fullAnswer }]);
   };
 
   // 提交表单回调

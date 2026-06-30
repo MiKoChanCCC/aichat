@@ -7,7 +7,7 @@ const ChatList = () => {
   const { getToken } = useAuth();
 
   const { isPending, error, data } = useQuery({
-    queryKey: ["repoData"],
+    queryKey: ["userChats"],
     queryFn: async () => {
       const token = await getToken();
       return fetch(`${import.meta.env.VITE_API_URL}/api/userchats`, {
@@ -34,7 +34,7 @@ const ChatList = () => {
             ? "出现错误"
             : data?.map((chat) => {
                 return (
-                  <Link to={`/chats/${chat._id}`} key={chat._id}>
+                  <Link to={`/dashboard/chats/${chat._id}`} key={chat._id}>
                     {chat.title}
                   </Link>
                 );

@@ -5,6 +5,8 @@ import { useLocation } from "react-router-dom";
 import Markdown from "react-markdown";
 import { useAuth } from "@clerk/clerk-react";
 import { IKImage } from "imagekitio-react";
+import React from "react";
+import { Fragment } from "react";
 
 const ChaPage = () => {
   // 获取params参数  :id
@@ -36,7 +38,7 @@ const ChaPage = () => {
               ? "发生错误"
               : data?.history.map((message, index) => {
                   return (
-                    <>
+                    <Fragment key={index}>
                       {message.img && (
                         <IKImage
                           urlEndpoint={import.meta.env.VITE_IMAGE_KIT_ENDPOINT}
@@ -56,10 +58,10 @@ const ChaPage = () => {
                       >
                         <Markdown>{message.parts[0].text}</Markdown>
                       </div>
-                    </>
+                    </Fragment>
                   );
                 })}
-          <NewPrompt />
+          {data && <NewPrompt data={data} />}
         </div>
       </div>
     </div>

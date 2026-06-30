@@ -1,4 +1,4 @@
-import express from "express";
+import express, { text } from "express";
 import ImageKit from "imagekit";
 import cors from "cors";
 import OpenAI from "openai";
@@ -92,7 +92,7 @@ app.get("/api/upload", (req, res) => {
 
 app.post("/api/chats", ClerkExpressRequireAuth(), async (req, res) => {
   const userId = req.auth.userId;
-  const { text } = req.body;
+  const { text, answer } = req.body;
   let title = "";
   if (text.length > 15) {
     title = text.slice(0, 15) + "...";
@@ -109,6 +109,9 @@ app.post("/api/chats", ClerkExpressRequireAuth(), async (req, res) => {
           role: "user",
           parts: [{ text }],
         },
+        ...(answer
+          ? [{ role: "assistant", parts: [{ text: answer }] }]
+          : []),
       ],
     });
     const savedChat = await newChat.save();
@@ -184,9 +187,40 @@ app.get("/api/chats/:id", ClerkExpressRequireAuth(), async (req, res) => {
   }
 });
 
+app.put("/api/chats/:id", ClerkExpressRequireAuth(), async (req, res) => {
+  const userId = req.auth.userId;
+
+  const { prompt, img, answer } = req.body;
+
+  const newItem = [
+    ...(prompt
+      ? [{ role: "user", parts: [{ text: prompt }], ...(img && { img }) }]
+      : []),
+    { role: "assistant", parts: [{ text: answer }] },
+  ];
+
+  try {
+    const updateChat = await Chat.updateOne(
+      { _id: req.params.id, userId },
+      {
+        $push: {
+          history: {
+            $each: newItem,
+          },
+        },
+      },
+    );
+
+    res.status(200).send();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("添加对话错误");
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(401).send("Unauthenticated!");
+  res.status(401).send("未认证身份");
 });
 
 app.listen(port, () => {

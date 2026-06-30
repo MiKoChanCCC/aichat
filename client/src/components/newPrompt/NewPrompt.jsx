@@ -5,8 +5,11 @@ import { useState } from "react";
 import { IKImage } from "imagekitio-react";
 import completionsFetch from "../../lib/openai";
 import Markdown from "react-markdown";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-const NewPrompt = () => {
+const NewPrompt = ({ data }) => {
   // 提示词
   const [prompt, setPrompt] = useState("");
   // AI回答
@@ -28,18 +31,86 @@ const NewPrompt = () => {
   ]);
 
   const endRef = useRef(null);
+  const fromRef = useRef(null);
 
   useEffect(() => {
     endRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [prompt, answer, img.dbData]);
+  }, [data, prompt, answer, img.dbData]);
 
-  // 使用openai.js（流式打字机效果）
+  const pdRef = useRef(false);
+  // 从Dashboard跳转过来时，自动为第一条消息生成AI回答
+  useEffect(() => {
+    if (
+      data?.history?.length === 1 &&
+      data.history[0].role === "user" &&
+      !pdRef.current
+    ) {
+      const userText = data.history[0].parts[0].text;
+      // 不设置prompt，因为ChatPage已经从data.history渲染了用户消息
+      add([{ role: "user", content: userText }]);
+      pdRef.current = true;
+    }
+  }, []);
+
+  const { getToken } = useAuth();
+
+  const queryClient = useQueryClient();
+
+  const navigate = useNavigate();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/chats/${data._id}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            prompt: prompt.length ? prompt : undefined,
+            answer: answer,
+            img: img.dbData?.filePath || undefined,
+          }),
+        },
+      );
+      return res.text();
+    },
+    onSuccess: () => {
+      queryClient
+        .invalidateQueries({ queryKey: ["chat", data._id] })
+        .then(() => {
+          setPrompt("");
+          setAnswer("");
+          setImg({
+            isLoading: false,
+            error: "",
+            dbData: {},
+            aiData: "",
+          });
+        });
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
+
+  // 使用openai.js 流式传输
+
   const add = async (newMessages) => {
     setAnswer("");
-    const fullAnswer = await completionsFetch(newMessages, (chunk) => {
-      setAnswer(chunk);
-    });
-    setMessages([...newMessages, { role: "assistant", content: fullAnswer }]);
+
+    try {
+      const fullAnswer = await completionsFetch(newMessages, (chunk) => {
+        setAnswer(chunk);
+      });
+      setMessages([...newMessages, { role: "assistant", content: fullAnswer }]);
+
+      mutation.mutate();
+    } catch (error) {}
   };
 
   // 提交表单回调
@@ -47,6 +118,7 @@ const NewPrompt = () => {
     e.preventDefault();
 
     const text = e.target.text.value;
+    fromRef.current.reset();
     if (!text) return;
 
     let newMessages = [];
@@ -102,7 +174,7 @@ const NewPrompt = () => {
       {/* 底部div，用于页面自动跳转到底部 */}
       <div className="endChat" ref={endRef}></div>
       {/* prompt表单区 */}
-      <form className="newForm" onSubmit={handleSubmit}>
+      <form className="newForm" onSubmit={handleSubmit} ref={fromRef}>
         <Upload setImg={setImg} />
         <input id="file" type="file" multiple={false} hidden />
         <input

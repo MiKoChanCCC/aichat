@@ -75,6 +75,7 @@ const HomePage = () => {
         <img src="/logo.png" alt="" />
         <div className="Links">
           <Link to="">Terms of Service</Link>
+          <span style={{ margin: "0px 10px" }}>|</span>
           <Link to="">Privacy Policy</Link>
         </div>
       </footer>
